@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type, FunctionDeclaration, Tool, Schema } from "@google/genai";
 import { VideoResult, QuizData } from "../types";
 
-// Initialize the client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// --- UPDATED LINE BELOW TO USE EMMTECH ---
+const ai = new GoogleGenAI({ apiKey: process.env.EMMTECH }); 
 
 // Models
 const SEARCH_MODEL = "gemini-2.5-flash"; // Good for search grounding
@@ -61,12 +61,9 @@ export const searchResearch = async (prompt: string): Promise<{ text: string; so
  * Finds videos using Google Search grounding.
  */
 export const findVideos = async (topic: string, className: string, instructions: string): Promise<VideoResult[]> => {
-  // Direct conversational prompt as requested by the user
-  // Example: "give me a youtube video link for the topic federalism, for ss2"
   const prompt = `Find 5 distinct YouTube video tutorials for the topic "${topic}" for class/grade "${className}". ${instructions}. Return only available video links found in search.`;
   
   try {
-    // 1. Perform the search
     const searchResponse = await ai.models.generateContent({
       model: SEARCH_MODEL,
       contents: prompt,
@@ -75,11 +72,9 @@ export const findVideos = async (topic: string, className: string, instructions:
       }
     });
 
-    // 2. Extract verified links from grounding metadata (The "Available" Videos)
     const groundingChunks = searchResponse.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const validLinks: {title: string, uri: string}[] = [];
     
-    // Filter for video-like URLs (prioritizing YouTube)
     const isLikelyVideo = (url: string) => {
       const lower = url.toLowerCase();
       return lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com');
@@ -95,12 +90,10 @@ export const findVideos = async (topic: string, className: string, instructions:
       });
     }
 
-    // 3. Prepare context for the reasoning model to format the output
     let context = "";
     if (validLinks.length > 0) {
       context = `Found these verified video links: ${JSON.stringify(validLinks)}`;
     } else {
-      // Fallback: Use text if metadata is sparse (less reliable for direct links but better than nothing)
       context = `Search Results Text: ${searchResponse.text}`;
     }
 
@@ -132,14 +125,12 @@ export const findVideos = async (topic: string, className: string, instructions:
       else return [];
     }
     
-    // 4. Post-process to extract Video IDs for embedding (if possible) and map fields
     return parsed.map((v: any) => {
       let videoId = "";
       let thumbnail = undefined;
       
       try {
         const urlObj = new URL(v.url);
-        // Attempt to extract YouTube ID for embedding
         if (urlObj.hostname.includes('youtube.com')) {
            videoId = urlObj.searchParams.get("v") || "";
         } else if (urlObj.hostname.includes('youtu.be')) {
@@ -157,9 +148,9 @@ export const findVideos = async (topic: string, className: string, instructions:
         description: v.description,
         videoId,
         thumbnail,
-        channelTitle: v.channel // Map the extracted channel name
+        channelTitle: v.channel
       };
-    }).filter((v: any) => v.url && v.title); // Basic validation
+    }).filter((v: any) => v.url && v.title);
 
   } catch (error) {
     console.error("Gemini Video Search Error:", error);
@@ -201,7 +192,7 @@ export const generateLessonNotes = async (topic: string, className: string, inst
 };
 
 /**
- * Section 4: Study Material (Notes + Recommendations)
+ * Section 4: Study Material
  */
 export const generateStudyMaterial = async (topic: string, className: string, instructions: string): Promise<string> => {
   const prompt = `
@@ -231,10 +222,9 @@ export const generateStudyMaterial = async (topic: string, className: string, in
 };
 
 /**
- * Section 5: Quiz Generation (JSON Structured)
+ * Section 5: Quiz Generation
  */
 export const generateQuiz = async (topic: string, className: string, level: string, instructions: string): Promise<QuizData> => {
-  // Enhanced prompt to ensure high-quality explanations
   const prompt = `
     Generate a quiz for Topic: "${topic}", Class: "${className}", Difficulty: "${level}". 
     ${instructions}
@@ -273,10 +263,7 @@ export const generateQuiz = async (topic: string, className: string, level: stri
 
     const json = cleanAndParseJson(response.text || "{}");
     
-    // Check if questions exist and are an array
     if (!json.questions || !Array.isArray(json.questions)) {
-       // Sometimes models wrap it in another object or just return the array if the schema isn't strictly followed
-       // Default safe return
        return { topic: topic, questions: [] };
     }
 
