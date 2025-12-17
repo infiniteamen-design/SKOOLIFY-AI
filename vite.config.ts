@@ -8,8 +8,8 @@ export default defineConfig(({ mode }) => {
       base: '/', 
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.API_KEY': JSON.stringify(env.EMMTECH),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.EMMTECH)
       },
       resolve: {
         alias: { '@': path.resolve(__dirname, '.') }
